@@ -1,0 +1,128 @@
+function binaryboost(num,iternum)
+% MULTICLASS_BOOST
+num=21;
+iternum=1000;
+
+load('bstfeature');
+load('Va_bstfeature');
+% load('bstLabel');
+% bstfeature=bstfeature(:,1:3:end);
+% idd=find(bstLabel~=0); 
+x=bstfeature(2:end,:);
+y_label=bstfeature(1,:);
+
+diary cl1
+diary on
+for class_id=1:num
+    fprintf('Class number is %u\n',class_id);
+ for iter=1:iternum
+%     if iter==1
+%         tic
+%        for class_id=selectnum
+           if iter==1            
+            ClassAll=cell(1,iternum);
+            com_va=zeros(1,iternum-1);
+            com_train=zeros(1,iternum-1);
+            va_error=zeros(1,iternum);
+            error_rate=va_error;          
+           %%%%% balance the positive and negative training number
+            posi=find(y_label==class_id);
+            nega=find(y_label~=class_id);   
+            pn_ratio=length(posi)/length(nega);
+            if pn_ratio<=1/5
+                nega=nega(1:floor((1/pn_ratio)/3):end);
+            else
+                if pn_ratio>=5
+                    posi=posi(1:floor(pn_ratio/3):end);
+                end
+            end
+    
+            xm=[x(:,nega),x(:,posi)];
+            y=ones(1,length(posi)+length(nega));
+            y(1:length(nega))=-1;
+            %%%% balance the positive and negative in validation set             
+            posi=find(Va_bstfeature(1,:)==class_id);
+            nega=find(Va_bstfeature(1,:)~=class_id);   
+            pn_ratio=length(posi)/length(nega);
+            if pn_ratio<=1/5
+                nega=nega(1:floor((1/pn_ratio)/3):end);
+            else
+                if pn_ratio>=5
+                    posi=posi(1:floor(pn_ratio/3):end);
+                end
+            end
+            
+            Va_m=[Va_bstfeature(2:end,nega),Va_bstfeature(2:end,posi)];
+            va_y=ones(1,length(posi)+length(nega));
+            va_y(1:length(nega))=-1;
+            Fx_va=zeros(2,size(Va_m,2));
+            
+            [Nfeatures, Nsamples] = size(xm); % Nsamples = Number of thresholds that we will consider
+            
+            w=ones(1,Nsamples);
+            Fxm=zeros(2, Nsamples);
+            end
+           
+            
+            [k, th, a , b] = selectBestRegressionStump(xm,y,w);
+      
+            % update parameters classifier
+            classifier(iter).featureNdx = k;
+            classifier(iter).th = th;
+            classifier(iter).a = a;
+            classifier(iter).b = b;
+            
+            
+            Fx_va(1,:)=a*(Va_m(k,:)>th)+b;
+            Fx_va(2,:)=Fx_va(1,:)+Fx_va(2,:);
+            va_error(iter)=length(find(sign(Fx_va(2,:))~=va_y))/length(va_y);
+    
+            % Updating and computing classifier output on training samples
+            Fxm(1,:)=a * (xm(k,:)>th) + b;
+            Fxm(2,:)=Fxm(1,:)+Fxm(2,:);
+            Cxm=sign(Fxm(2,:));
+            error_rate(iter)=length(find(Cxm~=y))/length(y);
+            fprintf('======Error is %e in training and %e in validation in iteration %u\n',error_rate(iter),va_error(iter),iter);
+            % Reweight training samples
+            w=w.*exp(-y.*Fxm(1,:));            
+            w=w./sum(w);
+            
+            ClassAll{iter}=classifier(iter);
+%             toc
+            if iter>=2
+                com_va(iter-1)=va_error(iter)-va_error(iter-1);
+                com_train(iter-1)=error_rate(iter)-error_rate(iter-1);
+                if com_va(iter-1)<0
+                    fprintf('Validation Decrease\n');
+                end
+                if com_train(iter-1)<0
+                    fprintf('Training Decrease\n');
+                end
+            end           
+            
+            if iter>300
+                if (1/5*sum(va_error(iter-4:iter))<va_error(iter))&&(1/5*sum(error_rate(iter-4:iter))>error_rate(iter))
+%                fprintf('>>>>>>>>Finish boosting at %u iteration<<<<<<<<<<<\n',iter);
+%                 ClassAll=ClassAll{1:iter-5};
+%                 save([num2str(class_id),'classifier'],'ClassAll');
+                break;
+                end               
+            end
+ end
+fprintf('>>>>>>>>Finish boosting at %u iteration<<<<<<<<<<<\n',iter);
+if iter~=iternum
+    bstClass=cell(1,iter-1);
+    for count=1:iter-1
+        bstClass{count}=ClassAll{count};
+    end
+else
+    bstClass=ClassAll;
+end
+error=[va_error(1:iter);error_rate(1:iter)];
+figure;plot(error(1,:)); hold on; plot(error(2,:),'-r');
+
+save([num2str(class_id),'classifier'],'bstClass');
+save([num2str(class_id),'clserror'],'error');
+end
+diary off
+%end
