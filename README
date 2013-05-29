@@ -1,0 +1,13 @@
+This is a simple package...
+
+There are 8 folders in our package. For Steve paper, we can find the source code script.m in the path /exp/stanford/
+
+There are several parts we need to pay attention:
+1. This code is for Steve paper and the correspnding dataset. If you need to apply to others. You need to make changes:
+   a. parameters in script.m;
+   b. in splitdata.m , we take the region.txt as semantic groundtruth. If in other dataset, you need to change the rate of selecting files (THE 12 ROW IN THE SOURCE CODE)
+   c. by default, we think that the label NULL is 0 in our set
+   d. For dataset provides groundtruth label as images, build your own ColorMap first and then make use of colortoid.m in front of all splitdata. REMEMBER TO CHANGE PATH AND CORRESPONDING NAMES!!		
+
+2. extern folder consists of external code we use. MAKE SURE YOU COMPLE THEM BEFORE USE
+3. I will upload jointboosting code as soon as I finished
