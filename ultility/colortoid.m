@@ -2,22 +2,22 @@ function colortoid(choose)
 % COLORTOID map the color ground truth to corresponding id 
 
 fprintf('Choose the Training(1) Validation(2) Test(3) set\n');
-choose=input('Input which you want: ');
+%choose=input('Input which you want: ');
 
 if choose==1
-    direct='Train/*.bmp';
+    direct='Train/*.pgn';
     file='Train';
     id='GT';
     sizemat='training_size';
 else
     if choose==2
-        direct='Validation/*.bmp';
+        direct='Validation/*.pgn';
         file='Validation';
         id='Va';
         sizemat='validation_size';
     else
         if choose==3
-            direct='Test/*.bmp';
+            direct='Test/*.pgn';
             file='Test';
             id='Test';
             sizemat='test_size';
@@ -44,7 +44,7 @@ for item=1:size(con,1)
     end
     toc
     
-    savename=regexprep(GT,'bmp','mat');
+    savename=regexprep(GT,'pgn','mat');
     save([[id,featurefile],'/',savename],'New_Id');
     fprintf('%u image %s finish...\n',item,savename);
     [row,col]=size(GT_img(:,:,1)); 
